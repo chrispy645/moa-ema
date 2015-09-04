@@ -1,0 +1,13 @@
+@relation weka.datagenerators.classifiers.classification.RDG1-S_1_-n_4_-a_4_-c_2_-N_0_-I_0_-M_1_-R_10
+
+@attribute a0 {false,true}
+@attribute a1 {false,true}
+@attribute a2 {false,true}
+@attribute a3 {false,true}
+@attribute class {c0,c1}
+
+@data
+true,true,false,false,c0
+true,false,false,false,c0
+false,true,false,true,c1
+false,true,true,false,c0

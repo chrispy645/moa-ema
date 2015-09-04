@@ -3,15 +3,17 @@ package moa.classifiers.functions;
 import moa.classifiers.AbstractClassifier;
 import moa.core.Measurement;
 import weka.core.Instance;
+import weka.core.SparseInstance;
 import weka.core.Utils;
 
 /**
  * Exponential moving average algorithm. This implementation
- * is for dense instances, so it might be quite slow.
+ * is for sparse instances, and should be much faster than
+ * the dense implementation.
  * @author cjb60
  *
  */
-public class EMA extends AbstractClassifier {
+public class SparseEMA extends AbstractClassifier {
 
 	private static final long serialVersionUID = -4357871674824496401L;
 
@@ -31,20 +33,26 @@ public class EMA extends AbstractClassifier {
 	}
 
 	@Override
-	public double[] getVotesForInstance(Instance inst) {
+	public double[] getVotesForInstance(Instance instance) {
 		if( m_weightMatrix == null ) {
-			m_weightMatrix = new double[inst.numAttributes()-1][inst.numClasses()];
+			m_weightMatrix = new double[instance.numAttributes()-1][instance.numClasses()];
 		}
+		
+		SparseInstance inst = null;
+		if( instance instanceof SparseInstance ) {
+			inst = (SparseInstance) instance;
+		}
+		
 		// score the connected classes
 		double[] scores = new double[inst.numClasses()];
 		for(int c = 0; c < inst.numClasses(); c++) {
 			// iterate through the instance x
 			double sum = 0;
-			for(int f = 0; f < inst.numAttributes()-1; f++) {
-				if( inst.value(f) == 0.0) {
+			for(int f = 0; f < inst.numValues(); f++) {
+				if( inst.index(f) == inst.classIndex() ) {
 					continue;
 				}
-				sum += (inst.value(f) * m_weightMatrix[f][c]);
+				sum += (inst.valueSparse(f) * m_weightMatrix[f][c]);
 			}
 			scores[c] = sum;
 		}
@@ -71,11 +79,11 @@ public class EMA extends AbstractClassifier {
 		for(int c = 0; c < inst.numClasses(); c++) {
 			// iterate through the instance x
 			double sum = 0;
-			for(int f = 0; f < inst.numAttributes()-1; f++) {
-				if( inst.value(f) == 0.0) {
+			for(int f = 0; f < inst.numValues(); f++) {
+				if( inst.index(f) == inst.classIndex() ) {
 					continue;
 				}
-				sum += (inst.value(f) * m_weightMatrix[f][c]);
+				sum += (inst.valueSparse(f) * m_weightMatrix[f][c]);
 			}
 			scores[c] = sum;
 		}
@@ -97,8 +105,8 @@ public class EMA extends AbstractClassifier {
 		double dx = scoreOfActualClass - scorePrime;	
 		if( dx < dm ) {
 			// for all f in x, do...
-			for(int f = 0; f < inst.numAttributes()-1; f++) {
-				if( inst.value(f) == 0.0 ) {
+			for(int f = 0; f < inst.numValues(); f++) {
+				if( inst.index(f) == inst.classIndex() ) {
 					continue;
 				}
 				// all active features' connections are first decayed,
@@ -107,11 +115,11 @@ public class EMA extends AbstractClassifier {
 				for(int c = 0; c < inst.numClasses(); c++) {
 					//if( c == x.classValue() ) continue;
 					// (1 - x_f^2 * beta) * w_fc
-					m_weightMatrix[f][c] = ( 1 - (inst.value(f)*inst.value(f)*beta) ) * m_weightMatrix[f][c];
+					m_weightMatrix[f][c] = ( 1 - (inst.valueSparse(f)*inst.valueSparse(f)*beta) ) * m_weightMatrix[f][c];
 				}
 				// 3.2
 				// boost connection to the true class
-				m_weightMatrix[f][(int)inst.classValue()] += (inst.value(f)*beta);
+				m_weightMatrix[f][(int)inst.classValue()] += (inst.valueSparse(f)*beta);
 				// 3.3
 				// then, drop any tiny weights
 				for(int c = 0; c < inst.numClasses(); c++) {
