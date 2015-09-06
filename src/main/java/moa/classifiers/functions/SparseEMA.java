@@ -48,7 +48,8 @@ public class SparseEMA extends AbstractClassifier {
 				if( instance.index(f) == instance.classIndex() ) {
 					continue;
 				}
-				sum += (instance.valueSparse(f) * m_weightMatrix[f][c]);
+				// todo
+				sum += (instance.valueSparse(f) * m_weightMatrix[ instance.index(f) ][c]);
 			}
 			scores[c] = sum;
 		}
@@ -79,7 +80,7 @@ public class SparseEMA extends AbstractClassifier {
 				if( inst.index(f) == inst.classIndex() ) {
 					continue;
 				}
-				sum += (inst.valueSparse(f) * m_weightMatrix[f][c]);
+				sum += (inst.valueSparse(f) * m_weightMatrix[ inst.index(f) ][c]);
 			}
 			scores[c] = sum;
 		}

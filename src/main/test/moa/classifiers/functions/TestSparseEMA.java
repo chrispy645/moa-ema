@@ -42,6 +42,11 @@ public class TestSparseEMA {
 		
 		TestEMA.printArray( ema.getWeightMatrix() );
 		
+		System.out.println("");		
+		for(Instance inst : data) {
+			System.out.println( Arrays.toString(ema.getVotesForInstance(inst) ) );
+		}
+		
 		
 		
 	}
