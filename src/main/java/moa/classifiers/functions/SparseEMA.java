@@ -2,6 +2,7 @@ package moa.classifiers.functions;
 
 import moa.classifiers.AbstractClassifier;
 import moa.core.Measurement;
+import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.SparseInstance;
 import weka.core.Utils;
@@ -38,28 +39,23 @@ public class SparseEMA extends AbstractClassifier {
 			m_weightMatrix = new double[instance.numAttributes()-1][instance.numClasses()];
 		}
 		
-		SparseInstance inst = null;
-		if( instance instanceof SparseInstance ) {
-			inst = (SparseInstance) instance;
-		}
-		
 		// score the connected classes
-		double[] scores = new double[inst.numClasses()];
-		for(int c = 0; c < inst.numClasses(); c++) {
+		double[] scores = new double[instance.numClasses()];
+		for(int c = 0; c < instance.numClasses(); c++) {
 			// iterate through the instance x
 			double sum = 0;
-			for(int f = 0; f < inst.numValues(); f++) {
-				if( inst.index(f) == inst.classIndex() ) {
+			for(int f = 0; f < instance.numValues(); f++) {
+				if( instance.index(f) == instance.classIndex() ) {
 					continue;
 				}
-				sum += (inst.valueSparse(f) * m_weightMatrix[f][c]);
+				sum += (instance.valueSparse(f) * m_weightMatrix[f][c]);
 			}
 			scores[c] = sum;
 		}
 		try {
 			Utils.normalize(scores);
 		} catch(Exception ex) {
-			return new double[ inst.numClasses() ];
+			return new double[ instance.numClasses() ];
 		}
 		return scores;
 	}
@@ -115,16 +111,17 @@ public class SparseEMA extends AbstractClassifier {
 				for(int c = 0; c < inst.numClasses(); c++) {
 					//if( c == x.classValue() ) continue;
 					// (1 - x_f^2 * beta) * w_fc
-					m_weightMatrix[f][c] = ( 1 - (inst.valueSparse(f)*inst.valueSparse(f)*beta) ) * m_weightMatrix[f][c];
+					m_weightMatrix[ inst.index(f) ][c] = ( 1 - (inst.valueSparse(f)*inst.valueSparse(f)*beta) ) *
+							m_weightMatrix[ inst.index(f) ][c];
 				}
 				// 3.2
 				// boost connection to the true class
-				m_weightMatrix[f][(int)inst.classValue()] += (inst.valueSparse(f)*beta);
+				m_weightMatrix[ inst.index(f) ][(int)inst.classValue()] += (inst.valueSparse(f)*beta);
 				// 3.3
 				// then, drop any tiny weights
 				for(int c = 0; c < inst.numClasses(); c++) {
-					if( m_weightMatrix[f][c] < wmin) {
-						m_weightMatrix[f][c] = 0;
+					if( m_weightMatrix[ inst.index(f) ][c] < wmin) {
+						m_weightMatrix[ inst.index(f) ][c] = 0;
 					}
 				}
 			}

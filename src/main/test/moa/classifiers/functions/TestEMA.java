@@ -9,7 +9,14 @@ import weka.core.converters.ConverterUtils.DataSource;
 
 public class TestEMA {
 	
-	private static double[] nonZero(double[] vector) {
+	/*
+	 * [0.15]
+	 * [0.258375, 0.1275]
+	 * [0.15]
+	 * [0.15]
+	 */
+	
+	public static double[] nonZero(double[] vector) {
 		ArrayList<Double> tmp = new ArrayList<Double>();
 		for(double v : vector) {
 			if( v != 0.0) {
@@ -21,6 +28,12 @@ public class TestEMA {
 			finalArr[x] = tmp.get(x);
 		}
 		return finalArr;
+	}
+	
+	public static void printArray(double[][] arr) {
+		for(int x = 0; x < arr.length; x++) { 
+			System.out.println(Arrays.toString(arr[x]));
+		}
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -36,10 +49,7 @@ public class TestEMA {
 			ema.trainOnInstance(inst);
 		}
 		
-		for(int row = 0; row < data.numAttributes()-1; row++) {
-			System.out.println( Arrays.toString( nonZero(ema.getWeightMatrix()[row])) );
-		}
-		System.out.println("");
+		printArray( ema.getWeightMatrix() );
 		
 	}
 
