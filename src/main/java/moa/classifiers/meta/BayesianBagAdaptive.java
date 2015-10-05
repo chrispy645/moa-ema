@@ -34,9 +34,9 @@ public class BayesianBagAdaptive extends AbstractClassifier {
     protected transient GammaDistribution m_gammaDefault = null;
     
     private double[] m_classFreqs = null;
-    private int m_instCounts = 0;
+    private double m_instCounts = 0;
     
-    private boolean m_debug = true;
+    private boolean m_debug = false;
     
     public void setDebug(boolean b) {
     	m_debug = b;
@@ -46,7 +46,7 @@ public class BayesianBagAdaptive extends AbstractClassifier {
     	return m_classFreqs;
     }
     
-    public int getInstCounts() {
+    public double getInstCounts() {
     	return m_instCounts;
     }
 
@@ -67,55 +67,49 @@ public class BayesianBagAdaptive extends AbstractClassifier {
     public void trainOnInstanceImpl(Instance inst) {
     	if(m_classFreqs == null) {
     		m_classFreqs = new double[ inst.numClasses() ];
-    		// laplace
-    		for(int x = 0; x < m_classFreqs.length; x++) {
-    			m_classFreqs[x] = 1;
-    		}
     	}
+    	
     	int classValue = (int)inst.classValue();
-    	m_instCounts += 1;
-    	m_classFreqs[classValue] += 1;
-    	double[] weights = null;
-    	if(m_instCounts < 100) {
-	    	weights = new double[this.ensemble.length];
+    	
+    	if(m_instCounts < 0) {
 	    	for(int i = 0; i < this.ensemble.length; i++) {
 	    		//weights[i] = MiscUtils.poisson(1, this.classifierRandom);
-	    		weights[i] = m_gammaDefault.sample();
+	    		Instance weightedInst = (Instance) inst.copy();
+	    		weightedInst.setWeight( m_gammaDefault.sample() );
+	    		this.ensemble[i].trainOnInstance(weightedInst);
 	    	} 	
     	} else {
-    		weights = new double[this.ensemble.length];
-    		double[] norm = Arrays.copyOf(m_classFreqs, m_classFreqs.length);
-    		Utils.normalize(norm);
-    		if(m_debug) {
-    			System.err.println( Arrays.toString(norm) );
-    		}
     		double c = 0;
-    		for(double n : norm) {
-    			c += (n*n);
+    		for(int x = 0; x < m_classFreqs.length; x++) {
+    			if( x == classValue) {
+    				c += (m_classFreqs[x]+1)*(m_classFreqs[x]+1);
+    			} else {
+    				c += (m_classFreqs[x]*m_classFreqs[x]);
+    			}
     		}
     		c = c / ((m_instCounts+1)*(m_instCounts+1));
     		
     		// for each model in the ensemble...
     		for (int i = 0; i < this.ensemble.length; i++) {
-    			// generate weights from gamma(...) for all classes,
-    			// normalise, and then assign model[i] = weight[classValue]
-	    		double[] weightsForAllClasses = new double[inst.numClasses()];
-	    		for(int x = 0; x < inst.numClasses(); x++) {
-	    			if(m_debug) {
-	    				System.out.println("norm = " + Arrays.toString(norm) + ", c = " + c + ", params = (" + (norm[x]/c) + ","
-	    						+ (1.0/(m_instCounts+1)) + "), weight: " + weightsForAllClasses[x]);
-	    			}
-	    			GammaDistribution g = new GammaDistribution(norm[x]/c, 1.0/(m_instCounts+1));
-	    			weightsForAllClasses[x] = g.sample();
-	    		}
-	    		Utils.normalize(weightsForAllClasses);
+    			GammaDistribution g = new GammaDistribution( (m_classFreqs[classValue]+1)/c, 1/(m_instCounts+1));
+    			g.reseedRandomGenerator( classifierRandom.nextLong() );
+    			double weight = g.sample();
+    			
+    			
+    			if(m_debug) {
+    				System.out.println("freqs = " + Arrays.toString(m_classFreqs) + ", c = " + c + ", params = (" + (m_classFreqs[classValue]/c) + ","
+    						+ (m_instCounts+1) + "), weight: " + weight);
+    			}   			
 	    		
 	        	Instance weightedInst = (Instance) inst.copy();
-	        	weightedInst.setWeight( weightsForAllClasses[classValue] );
+	        	//weightedInst.setWeight( weightsForAllClasses[classValue] );
+	        	weightedInst.setWeight(weight);
 	        	this.ensemble[i].trainOnInstance(weightedInst);
     		}
     		
-    	}	
+    	}
+    	m_instCounts += 1;
+    	m_classFreqs[classValue] += 1;
     }
 
     @Override

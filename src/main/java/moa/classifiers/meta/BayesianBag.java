@@ -10,6 +10,7 @@ import moa.core.DoubleVector;
 import moa.core.Measurement;
 import moa.core.MiscUtils;
 import moa.options.ClassOption;
+import moa.options.FloatOption;
 import moa.options.IntOption;
 
 public class BayesianBag extends AbstractClassifier {
@@ -27,6 +28,8 @@ public class BayesianBag extends AbstractClassifier {
     public IntOption ensembleSizeOption = new IntOption("ensembleSize", 's',
             "The number of models in the bag.", 10, 1, Integer.MAX_VALUE);
     
+    public FloatOption kOption = new FloatOption("k", 'k', "k param", 1, 1, Double.MAX_VALUE);
+    public FloatOption thetaOption = new FloatOption("theta", 't', "theta param", 1, 1, Double.MAX_VALUE); 
 
     protected Classifier[] ensemble;
     
@@ -40,7 +43,8 @@ public class BayesianBag extends AbstractClassifier {
         for (int i = 0; i < this.ensemble.length; i++) {
             this.ensemble[i] = baseLearner.copy();
         }
-        m_gamma = new GammaDistribution(1, 1);
+        m_gamma = new GammaDistribution(kOption.getValue(), thetaOption.getValue());
+        m_gamma.reseedRandomGenerator( this.classifierRandom.nextLong() );
     }
 
     @Override

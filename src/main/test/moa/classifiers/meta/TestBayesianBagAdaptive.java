@@ -2,6 +2,8 @@ package moa.classifiers.meta;
 
 import java.util.Arrays;
 
+import moa.streams.generators.RandomRBFGenerator;
+
 import org.apache.commons.math3.distribution.GammaDistribution;
 
 import weka.core.Instances;
@@ -20,33 +22,22 @@ public class TestBayesianBagAdaptive {
 		bba.prepareForUse();
 		bba.resetLearning();
 		bba.setDebug(true);
-		
+
+		/*
 		for(int x = 0; x < data.numInstances(); x++) {
 			bba.trainOnInstance(data.get(x));
 		}
-		
-		//System.out.println( Arrays.toString( bba.getClassFreqs() ) );
-		//System.out.println( bba.getInstCounts() );
-		
-		/*
-		double[] freqs = new double[] { 0.8, 0.1, 0.05, 0.05 };
-		double N = 10;
-		double c = 0;
-		for(double freq : freqs) {
-			c += (freq*freq);
-		}
-		c = c / ( (N+1)*(N+1) );
-		System.out.println("c = " + c);
-		
-		double[] wts = new double[ freqs.length ];
-		for(int x = 0; x < wts.length; x++) {
-			GammaDistribution g = new GammaDistribution(freqs[x]/c, 1.0/N);
-			wts[x] = g.sample();
-			System.out.println("params = (" + freqs[x]/c + "," + 1.0/N + "), weight: " + wts[x]);
-		}
-		Utils.normalize(wts);
-		System.out.println( Arrays.toString(wts) );
 		*/
+
+		RandomRBFGenerator gen = new RandomRBFGenerator();
+		gen.prepareForUse();
+		
+		long t0 = System.currentTimeMillis();
+		for(int x = 0; x < 1000; x++) {
+			bba.trainOnInstance( gen.nextInstance() );
+		}
+		long now = System.currentTimeMillis();
+		System.out.println("Time: " + (double)(now - t0) / 1000.0 + " secs" );
 		
 	}
 	
