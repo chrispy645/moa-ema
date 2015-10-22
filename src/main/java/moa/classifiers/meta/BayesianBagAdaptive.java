@@ -59,7 +59,7 @@ public class BayesianBagAdaptive extends AbstractClassifier {
             this.ensemble[i] = baseLearner.copy();
         }
         m_classFreqs = null;
-        m_instCounts = 0;
+        m_instCounts = 1; // laplace
         m_gammaDefault = new GammaDistribution(1,1);
     }
 
@@ -67,6 +67,9 @@ public class BayesianBagAdaptive extends AbstractClassifier {
     public void trainOnInstanceImpl(Instance inst) {
     	if(m_classFreqs == null) {
     		m_classFreqs = new double[ inst.numClasses() ];
+    		for(int x = 0; x < m_classFreqs.length; x++) {
+    			m_classFreqs[x] = 1; // laplace
+    		}
     	}
     	
     	int classValue = (int)inst.classValue();
@@ -79,6 +82,9 @@ public class BayesianBagAdaptive extends AbstractClassifier {
 	    		this.ensemble[i].trainOnInstance(weightedInst);
 	    	} 	
     	} else {
+    		// old formulation:
+    		// w ~ gamma( (xj + 1) / c , N+1 )
+    		/*
     		double c = 0;
     		for(int x = 0; x < m_classFreqs.length; x++) {
     			if( x == classValue) {
@@ -88,17 +94,34 @@ public class BayesianBagAdaptive extends AbstractClassifier {
     			}
     		}
     		c = c / ((m_instCounts+1)*(m_instCounts+1));
+    		*/
+    		
+    		double k = 1;
     		
     		// for each model in the ensemble...
     		for (int i = 0; i < this.ensemble.length; i++) {
-    			GammaDistribution g = new GammaDistribution( (m_classFreqs[classValue]+1)/c, 1/(m_instCounts+1));
-    			g.reseedRandomGenerator( classifierRandom.nextLong() );
-    			double weight = g.sample();
     			
+    			//GammaDistribution g = new GammaDistribution( (m_classFreqs[classValue]+1)/c, 1/(m_instCounts+1));
+    			GammaDistribution g = new GammaDistribution( (k*m_classFreqs[classValue])/m_instCounts,
+    					m_instCounts/(k*m_classFreqs[classValue]) );	
+    			
+    			g.reseedRandomGenerator( classifierRandom.nextLong() );
+    			double weight = g.sample(); 			
     			
     			if(m_debug) {
-    				System.out.println("freqs = " + Arrays.toString(m_classFreqs) + ", c = " + c + ", params = (" + (m_classFreqs[classValue]/c) + ","
-    						+ (m_instCounts+1) + "), weight: " + weight);
+    			//	System.out.println("freqs = " + Arrays.toString(m_classFreqs) + ", c = " + c + ", params = (" + (m_classFreqs[classValue]/c) + ","
+    			//			+ (m_instCounts+1) + "), weight: " + weight);
+    				System.out.println("**debug**");
+    				System.out.println("  freqs = " + Arrays.toString(m_classFreqs) );
+    				System.out.println("  freqs for this class = " + m_classFreqs[classValue]);
+    				System.out.println("  tot = " + m_instCounts);
+    				
+    				System.out.println("  k = " + ((k*m_classFreqs[classValue]) / m_instCounts) );
+    				System.out.println("  theta = " + (m_instCounts) / (k*m_classFreqs[classValue]) );
+    				
+    				System.out.println("  E[W] = " + (m_classFreqs[classValue]/m_instCounts) * (m_instCounts/m_classFreqs[classValue]) );
+    				System.out.println("  Var[W] = " + m_instCounts/(k*m_classFreqs[classValue]) );
+    				
     			}   			
 	    		
 	        	Instance weightedInst = (Instance) inst.copy();

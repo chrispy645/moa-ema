@@ -3,6 +3,7 @@ package moa.classifiers.meta;
 import java.util.Arrays;
 
 import moa.streams.generators.RandomRBFGenerator;
+import moa.streams.generators.RandomTreeGenerator;
 
 import org.apache.commons.math3.distribution.GammaDistribution;
 
@@ -29,7 +30,8 @@ public class TestBayesianBagAdaptive {
 		}
 		*/
 
-		RandomRBFGenerator gen = new RandomRBFGenerator();
+		RandomTreeGenerator gen = new RandomTreeGenerator();
+		gen.numClassesOption.setValue(40);
 		gen.prepareForUse();
 		
 		long t0 = System.currentTimeMillis();
