@@ -1,59 +1,24 @@
-/*
- *    OzaBag.java
- *    Copyright (C) 2007 University of Waikato, Hamilton, New Zealand
- *    @author Richard Kirkby (rkirkby@cs.waikato.ac.nz)
- *
- *    This program is free software; you can redistribute it and/or modify
- *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation; either version 3 of the License, or
- *    (at your option) any later version.
- *
- *    This program is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU General Public License for more details.
- *
- *    You should have received a copy of the GNU General Public License
- *    along with this program. If not, see <http://www.gnu.org/licenses/>.
- *    
- */
 package moa.classifiers.meta;
+
+import java.util.Arrays;
+
+import org.apache.commons.math3.distribution.GammaDistribution;
 
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.Classifier;
 import weka.core.Instance;
-
+import weka.core.Utils;
 import moa.core.DoubleVector;
 import moa.core.Measurement;
 import moa.core.MiscUtils;
 import moa.options.ClassOption;
 import moa.options.IntOption;
 
-/**
- * Incremental on-line bagging of Oza and Russell.
- *
- * <p>Oza and Russell developed online versions of bagging and boosting for
- * Data Streams. They show how the process of sampling bootstrap replicates
- * from training data can be simulated in a data stream context. They observe
- * that the probability that any individual example will be chosen for a
- * replicate tends to a Poisson(1) distribution.</p>
- *
- * <p>[OR] N. Oza and S. Russell. Online bagging and boosting.
- * In Artiﬁcial Intelligence and Statistics 2001, pages 105–112.
- * Morgan Kaufmann, 2001.</p>
- *
- * <p>Parameters:</p> <ul>
- * <li>-l : Classiﬁer to train</li>
- * <li>-s : The number of models in the bag</li> </ul>
- *
- * @author Richard Kirkby (rkirkby@cs.waikato.ac.nz)
- * @version $Revision: 7 $
- */
-public class OzaBagLambda extends AbstractClassifier {
+public class BayesianBagAdaptiveXi extends AbstractClassifier {
 
     @Override
     public String getPurposeString() {
-        return "Incremental on-line bagging of Oza and Russell.";
+        return "Adaptive Bayesian bagging";
     }
         
     private static final long serialVersionUID = 1L;
@@ -64,9 +29,26 @@ public class OzaBagLambda extends AbstractClassifier {
     public IntOption ensembleSizeOption = new IntOption("ensembleSize", 's',
             "The number of models in the bag.", 10, 1, Integer.MAX_VALUE);
     
-    public IntOption lambdaOption = new IntOption("lambda", 'L', "lambda", 1, 1, 100);
-
     protected Classifier[] ensemble;
+    
+    protected transient GammaDistribution m_gammaDefault = null;
+    
+    private double[] m_classFreqs = null;
+    private double m_instCounts = 0;
+    
+    private boolean m_debug = false;
+    
+    public void setDebug(boolean b) {
+    	m_debug = b;
+    }
+    
+    public double[] getClassFreqs() {
+    	return m_classFreqs;
+    }
+    
+    public double getInstCounts() {
+    	return m_instCounts;
+    }
 
     @Override
     public void resetLearningImpl() {
@@ -76,18 +58,48 @@ public class OzaBagLambda extends AbstractClassifier {
         for (int i = 0; i < this.ensemble.length; i++) {
             this.ensemble[i] = baseLearner.copy();
         }
+        m_classFreqs = null;
+        m_instCounts = 1; // laplace
+        m_gammaDefault = new GammaDistribution(1,1);
     }
 
     @Override
     public void trainOnInstanceImpl(Instance inst) {
-        for (int i = 0; i < this.ensemble.length; i++) {
-            int k = MiscUtils.poisson(this.lambdaOption.getValue(), this.classifierRandom);
-            if (k > 0) {
-                Instance weightedInst = (Instance) inst.copy();
-                weightedInst.setWeight(inst.weight() * k);
-                this.ensemble[i].trainOnInstance(weightedInst);
-            }
-        }
+    	if(m_classFreqs == null) {
+    		m_classFreqs = new double[ inst.numClasses() ];
+    		for(int x = 0; x < m_classFreqs.length; x++) {
+    			m_classFreqs[x] = 1; // laplace
+    		}
+    	}
+    	
+    	int classValue = (int)inst.classValue();
+    	
+    	if(m_instCounts < 0) {
+	    	for(int i = 0; i < this.ensemble.length; i++) {
+	    		//weights[i] = MiscUtils.poisson(1, this.classifierRandom);
+	    		Instance weightedInst = (Instance) inst.copy();
+	    		weightedInst.setWeight( m_gammaDefault.sample() );
+	    		this.ensemble[i].trainOnInstance(weightedInst);
+	    	} 	
+    	} else {
+
+    		// for each model in the ensemble...
+    		for (int i = 0; i < this.ensemble.length; i++) {
+    			GammaDistribution g = new GammaDistribution( m_classFreqs[classValue], 1/m_classFreqs[classValue] );	  			
+    			g.reseedRandomGenerator( classifierRandom.nextLong() );
+    			double weight = g.sample(); 			   			
+    			if(m_debug) { 
+    				//
+    			}   				    		
+	        	Instance weightedInst = (Instance) inst.copy();
+	        	//weightedInst.setWeight( weightsForAllClasses[classValue] );
+	        	weightedInst.setWeight(weight);
+	        	this.ensemble[i].trainOnInstance(weightedInst);
+    		}
+    		
+    	}
+    	m_instCounts += 1;
+    	m_classFreqs[classValue] += 1;
     }
 
     @Override
