@@ -22,11 +22,11 @@ package moa.classifiers.meta;
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.Classifier;
 import weka.core.Instance;
-
 import moa.core.DoubleVector;
 import moa.core.Measurement;
 import moa.core.MiscUtils;
 import moa.options.ClassOption;
+import moa.options.FlagOption;
 import moa.options.IntOption;
 
 /**
@@ -65,13 +65,18 @@ public class OzaBagLambda extends AbstractClassifier {
             "The number of models in the bag.", 10, 1, Integer.MAX_VALUE);
     
     public IntOption lambdaOption = new IntOption("lambda", 'L', "lambda", 1, 1, 100);
+    
+    public FlagOption debugOption = new FlagOption("debug", 'd', "debug");
 
     protected Classifier[] ensemble;
+    
+    private boolean m_debug = false;
 
     @Override
     public void resetLearningImpl() {
         this.ensemble = new Classifier[this.ensembleSizeOption.getValue()];
         Classifier baseLearner = (Classifier) getPreparedClassOption(this.baseLearnerOption);
+        this.m_debug = this.debugOption.isSet();
         baseLearner.resetLearning();
         for (int i = 0; i < this.ensemble.length; i++) {
             this.ensemble[i] = baseLearner.copy();
@@ -87,6 +92,9 @@ public class OzaBagLambda extends AbstractClassifier {
                 weightedInst.setWeight(inst.weight() * k);
                 this.ensemble[i].trainOnInstance(weightedInst);
             }
+			if(m_debug) { 
+				System.out.println(inst.weight()*k);
+			}
         }
     }
 

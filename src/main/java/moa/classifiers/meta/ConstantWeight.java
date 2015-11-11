@@ -14,7 +14,7 @@ public class ConstantWeight extends AbstractClassifier {
 	public ClassOption m_baseLearnerOption = new ClassOption("baseLearner", 'l',
             "Classifier to train.", Classifier.class, "trees.HoeffdingTree");
 	private Classifier m_baseLearner = null;
-	public IntOption m_weightOption = new IntOption("weight", 'w', "weight", 1, 1, 20);
+	public IntOption m_weightOption = new IntOption("weight", 'w', "weight", 1, 1, 200);
 	private int m_weight = 1;
 
 	@Override
