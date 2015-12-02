@@ -64,7 +64,7 @@ public class OzaBagLambda extends AbstractClassifier {
     public IntOption ensembleSizeOption = new IntOption("ensembleSize", 's',
             "The number of models in the bag.", 10, 1, Integer.MAX_VALUE);
     
-    public IntOption lambdaOption = new IntOption("lambda", 'L', "lambda", 1, 1, 100);
+    public IntOption lambdaOption = new IntOption("lambda", 'L', "lambda", 1, 1, 1000);
     
     public FlagOption debugOption = new FlagOption("debug", 'd', "debug");
 
