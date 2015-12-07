@@ -20,7 +20,7 @@ public class RandomRBFGeneratorNR extends RandomRBFGenerator {
         		classIndices.add(y);
         	}
         }
-        Collections.shuffle(classIndices);
+        Collections.shuffle(classIndices, modelRand);
         
         for (int i = 0; i < this.centroids.length; i++) {
             this.centroids[i] = new Centroid();
