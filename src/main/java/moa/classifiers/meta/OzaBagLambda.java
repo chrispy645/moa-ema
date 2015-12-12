@@ -87,10 +87,13 @@ public class OzaBagLambda extends AbstractClassifier {
     public void trainOnInstanceImpl(Instance inst) {
         for (int i = 0; i < this.ensemble.length; i++) {
             int k = MiscUtils.poisson(this.lambdaOption.getValue(), this.classifierRandom);
-            if (k > 0) {
-                Instance weightedInst = (Instance) inst.copy();
-                weightedInst.setWeight(inst.weight() * k);
-                this.ensemble[i].trainOnInstance(weightedInst);
+            
+            if( !m_debug ) {
+	            if (k > 0) {
+	                Instance weightedInst = (Instance) inst.copy();
+	                weightedInst.setWeight(inst.weight() * k);
+	                this.ensemble[i].trainOnInstance(weightedInst);
+	            }
             }
 			if(m_debug) { 
 				System.out.println(inst.weight()*k);

@@ -21,7 +21,7 @@ public class GenerateRBFClassDrift {
 		rbf.numCentroidsOption.setValue(n);
 		rbf.prepareForUse();
 		
-		ClassDistributionDriftGeneratorOld gen = new ClassDistributionDriftGeneratorOld(rbf, maxInstances, maxDrifts);
+		ClassDistributionDriftGenerator gen = new ClassDistributionDriftGenerator(rbf, maxInstances, maxDrifts);
 		gen.generate();
 		
 	}

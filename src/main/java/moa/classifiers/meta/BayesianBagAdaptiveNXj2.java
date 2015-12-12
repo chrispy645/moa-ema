@@ -96,11 +96,14 @@ public class BayesianBagAdaptiveNXj2 extends AbstractClassifier {
     			double weight = g.sample(); 			   			
     			if(m_debug) { 
     				System.out.println(weight);
-    			}    		
-	        	Instance weightedInst = (Instance) inst.copy();
-	        	//weightedInst.setWeight( weightsForAllClasses[classValue] );
-	        	weightedInst.setWeight(weight);
-	        	this.ensemble[i].trainOnInstance(weightedInst);
+    			}
+    			
+    			if(!m_debug) {
+		        	Instance weightedInst = (Instance) inst.copy();
+		        	//weightedInst.setWeight( weightsForAllClasses[classValue] );
+		        	weightedInst.setWeight(weight);
+		        	this.ensemble[i].trainOnInstance(weightedInst);
+    			}
     		}
     		
     	}

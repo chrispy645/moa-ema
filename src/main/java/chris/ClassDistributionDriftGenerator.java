@@ -81,7 +81,7 @@ public class ClassDistributionDriftGenerator {
 				}
 			}
 			
-			Collections.shuffle(tmp);
+			Collections.shuffle(tmp, m_rnd);
 			for(Instance inst : tmp) {
 				System.out.println(inst);
 			}

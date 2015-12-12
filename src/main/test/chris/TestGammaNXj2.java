@@ -1,105 +1,56 @@
 package chris;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
-
-import moa.classifiers.meta.BayesianBagAdaptiveNXj2;
-import moa.streams.generators.HyperplaneGenerator;
-import moa.streams.generators.RandomRBFGenerator;
-import moa.streams.generators.RandomTreeGenerator;
-
+import java.util.Arrays;
 import org.apache.commons.math3.distribution.GammaDistribution;
 
 import weka.core.Instance;
+import weka.core.Instances;
 import weka.core.Utils;
+import weka.core.converters.ConverterUtils.DataSource;
 
 public class TestGammaNXj2 {
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		
-		ArrayList<Integer> tokens = new ArrayList<Integer>( 200 + 100 + 500 );
+		DataSource ds = new DataSource("/Volumes/CB_RESEARCH/590-cyber-sec-big-output/class-dist-drift-datasets/rbf_5.arff");
+		//DataSource ds = new DataSource("/tmp/rbf5.arff");
+		Instances data = ds.getDataSet();
+		data.setClassIndex(data.numAttributes()-1);
 		
-		BayesianBagAdaptiveNXj2 bag = new BayesianBagAdaptiveNXj2();
+		ArrayList< ArrayList<Double> > arr = new ArrayList< ArrayList<Double> >();
+		for(int k = 0; k < data.numClasses(); k++) arr.add(k, new ArrayList<Double>());
 		
-		//HyperplaneGenerator gen = new HyperplaneGenerator();
-		RandomRBFGenerator gen = new RandomRBFGenerator();
-		gen.numCentroidsOption.setValue(50);
-		int nc = 40;
-		gen.numClassesOption.setValue(nc);
-		gen.prepareForUse();
-		bag.ensembleSizeOption.setValue(1);
-		bag.prepareForUse();
-		bag.setDebug(true);
-		double m_instCounts = 1;
-		double[] classDist = new double[nc];
-		for(int x= 0; x < classDist.length; x++) classDist[x] = 1;
 		
-		for(int x = 0; x < 10000; x++) {
-			//bag.trainOnInstance( hpg10.nextInstance() );
-			//tokens.add( (int) rtg40.nextInstance().classValue() );
+		//ArrayList<Double> arr = new ArrayList<Double>();
+		double[] freqs = new double[data.numClasses()];
+		for(int x = 0; x < freqs.length; x++) freqs[x]=1;
+		double total = 1;
+		for(int x = 0; x < 100000; x++) {
+			Instance inst = data.get(x);
+			int classVal = (int)inst.classValue();
 			
-			Instance inst = gen.nextInstance();
-			int classValue = (int)inst.classValue();
-			GammaDistribution g = new GammaDistribution( classDist[classValue],
-					m_instCounts / (classDist[classValue]*classDist[classValue]) );
-			System.out.println(g.sample());
+			GammaDistribution g = new GammaDistribution(freqs[classVal], total / (freqs[classVal]*freqs[classVal]) );
 			
-			m_instCounts += 1;
-			classDist[ classValue ] += 1;
-			
+			freqs[classVal] += 1;
+			total += 1;
+
+			arr.get(classVal).add(g.sample());
 		}
 		
-		//System.err.println( hpg10.getHeader() );
+		System.out.println("freqs: " + Arrays.toString(freqs));
+		System.out.println(Utils.sum(freqs));
 		
+		for(int k = 0; k < data.numClasses(); k++) {
 		
-		System.exit(0);
-
-		Collections.shuffle(tokens);
+			double[] tmp = new double[ arr.get(k).size() ];
+			for(int x = 0; x < tmp.length; x++) tmp[x] = arr.get(k).get(x);
+			
+			System.out.println( "empirical mean: " + Utils.mean(tmp) );
+			System.out.println( "theoretical mean: " + ( total / freqs[k]) );
 		
-		//double[] classDist = new double[] { 200, 100, 500 };
-		//double N = Utils.sum(classDist);
-
-		ArrayList<Double> arr = new ArrayList<Double>();
-		double instCount = 1;
-		classDist = new double[40];
-		for(int x = 0; x < 40; x++) classDist[x] = 1;
-		
-		Random rnd = new Random(0);
-		
-		for(int x = 0; x < tokens.size(); x++) {
-			int classIndex = tokens.get(x);
-			for(int b = 0; b < 1; b++) {
-				GammaDistribution g = new GammaDistribution(classDist[classIndex],
-						instCount / (classDist[classIndex]*classDist[classIndex]) );
-				g.reseedRandomGenerator(rnd.nextLong());
-				arr.add( g.sample() );
-			}		
-			instCount += 1;
-			classDist[classIndex] += 1;
 		}
-		double[] samples = new double[ arr.size() ];
-		for(int x = 0; x < samples.length; x++) samples[x] = arr.get(x);
-
 		
-		System.out.println("theoretical e[w]: " + classDist.length);
-		System.out.println("empirical e[w]: " + Utils.mean(samples) );
-		
-		// -----
-		
-		// what about xj, for j=1
-		
-		/*
-		
-		samples = new double[10000];
-		GammaDistribution g = new GammaDistribution(classDist[0], N / (classDist[0]*classDist[0]));
-		for(int x = 0; x < 10000; x++) {
-			samples[x] = g.sample();
-		}
-		System.out.println("theoretical e[w1]: " + (N / classDist[0]));
-		System.out.println("empirical e[w1]: " + Utils.mean(samples));
-		
-		*/
 		
 	}
 
