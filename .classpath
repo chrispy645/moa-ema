@@ -6,6 +6,5 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/moa-2014.11-SNAPSHOT-sources"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/weka-fresh"/>
 	<classpathentry kind="lib" path="lib/commons-math3-3.5.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/wekaPython"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
